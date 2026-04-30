@@ -77,6 +77,12 @@ def generate_brief(
             reason = event.metadata.get("reason") if isinstance(event.metadata, dict) else None
             if reason:
                 lines.append(f"  - 为什么值得看：{reason}")
+            insight = event.metadata.get("llm_insight") or event.metadata.get("heuristic_insight")
+            if insight:
+                lines.append(f"  - 洞察：{insight}")
+            watch_next = event.metadata.get("watch_next")
+            if watch_next:
+                lines.append(f"  - 后续关注：{watch_next}")
             lines.append(f"  - 来源：{event.source}")
             lines.append(f"  - 主题：{topic_str}")
             lines.append(f"  - 信号分：{event.signal_score:.2f}")
@@ -102,8 +108,8 @@ def _headline_section(events: list[IntelligenceEvent]) -> list[str]:
         lines.append("## 今日最重要 3 条")
         lines.append("")
         for event in top:
-            reason = event.metadata.get("reason") if isinstance(event.metadata, dict) else ""
-            lines.append(f"- **{event.title}**：{reason or '高优先级事件'}")
+            insight = event.metadata.get("llm_insight") or event.metadata.get("heuristic_insight") or "高优先级事件"
+            lines.append(f"- **{event.title}**：{insight}")
         lines.append("")
     return lines
 

@@ -9,6 +9,7 @@ try:
     from .dedup import dedup_events
     from .topic_classifier import classify_events
     from .signal_ranker import score_events
+    from .llm_enricher import enrich_events
     from .report_generator import generate_brief
     from .change_detection import load_snapshot, save_snapshot, diff_events
 except ImportError:
@@ -18,6 +19,7 @@ except ImportError:
     from dedup import dedup_events
     from topic_classifier import classify_events
     from signal_ranker import score_events
+    from llm_enricher import enrich_events
     from report_generator import generate_brief
     from change_detection import load_snapshot, save_snapshot, diff_events
 
@@ -42,7 +44,8 @@ def merge_batches(batches: list[IngestionBatch]):
     all_events = []
     for batch in batches:
         all_events.extend(batch.events)
-    return score_events(classify_events(dedup_events(all_events)))
+    merged = score_events(classify_events(dedup_events(all_events)))
+    return enrich_events(merged)
 
 
 def _pick_adapter(source):

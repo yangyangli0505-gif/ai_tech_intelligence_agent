@@ -104,7 +104,6 @@ def score_event(event: IntelligenceEvent) -> IntelligenceEvent:
         if phrase in title_summary:
             score -= 0.20
 
-    # consumer-facing product updates should usually rank below infra / release / eval signals
     consumer_hits = sum(1 for phrase in CONSUMER_PRODUCT_PATTERNS if phrase in title_summary)
     if consumer_hits >= 1:
         score -= 0.10
@@ -122,6 +121,8 @@ def score_event(event: IntelligenceEvent) -> IntelligenceEvent:
     event.signal_score = score
     event.metadata["signal_bucket"] = signal_bucket(score)
     event.metadata["reason"] = explain_score(event)
+    event.metadata["heuristic_insight"] = explain_insight(event)
+    event.metadata["watch_next"] = suggest_watch_next(event)
     return event
 
 
@@ -149,6 +150,36 @@ def explain_score(event: IntelligenceEvent) -> str:
     if not reasons:
         reasons.append("作为背景补充保留")
     return "；".join(dict.fromkeys(reasons))
+
+
+def explain_insight(event: IntelligenceEvent) -> str:
+    topics = set(event.topics)
+    if {"infra_compute", "model_release"} & topics and "agent" in topics:
+        return "这条更像产业底座升级，可能直接影响后续 Agent 能力边界和部署成本。"
+    if "eval_safety" in topics and "infra_compute" in topics:
+        return "它说明行业瓶颈正在从单纯训练算力，转向评测、推理和系统效率。"
+    if "mcp" in topics:
+        return "这类信号通常不是单点功能更新，而是生态协议层正在成熟。"
+    if "model_release" in topics:
+        return "这类更新值得看它是不是能力边界变化，而不只是常规版本迭代。"
+    if "enterprise_adoption" in topics:
+        return "更值得关注的是它是否意味着 AI 能力正在进入真实商业闭环。"
+    return "这条更适合作为行业背景信号，帮助判断热点主线而不是单点噪音。"
+
+
+def suggest_watch_next(event: IntelligenceEvent) -> str:
+    topics = set(event.topics)
+    if "infra_compute" in topics:
+        return "继续看成本、吞吐和部署节奏"
+    if "agent" in topics:
+        return "继续看是否出现真实工作流落地"
+    if "eval_safety" in topics:
+        return "继续看评测基准和安全边界变化"
+    if "model_release" in topics:
+        return "继续看是否伴随 API / 定价 / benchmark"
+    if "funding_policy" in topics:
+        return "继续看是否影响资本开支和监管走向"
+    return "继续看是否被更多源重复验证"
 
 
 def score_events(events: list[IntelligenceEvent]) -> list[IntelligenceEvent]:
