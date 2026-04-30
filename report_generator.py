@@ -47,8 +47,7 @@ def generate_brief(
         lines.append(f"变化摘要：新增 {added} 条，升温 {escalated} 条，重复延续 {repeated} 条。")
         lines.append("")
 
-    lines.append("一句话总结：今天重点看高优先级事件，尤其是模型发布、Agent、MCP、infra 与 eval/safety 方向。")
-    lines.append("")
+    lines.extend(_headline_section(events))
 
     if change_summary and change_summary.get("added"):
         lines.append("## 新增变化")
@@ -75,6 +74,9 @@ def generate_brief(
             lines.append(f"- **{event.title}**")
             if event.summary:
                 lines.append(f"  - 摘要：{event.summary[:220]}")
+            reason = event.metadata.get("reason") if isinstance(event.metadata, dict) else None
+            if reason:
+                lines.append(f"  - 为什么值得看：{reason}")
             lines.append(f"  - 来源：{event.source}")
             lines.append(f"  - 主题：{topic_str}")
             lines.append(f"  - 信号分：{event.signal_score:.2f}")
@@ -89,6 +91,21 @@ def generate_brief(
     lines.append("")
 
     return "\n".join(lines).strip() + "\n"
+
+
+def _headline_section(events: list[IntelligenceEvent]) -> list[str]:
+    lines: list[str] = []
+    top = events[:3]
+    lines.append("一句话总结：今天最值得看的，优先是高优先级发布、Agent / orchestration、算力基础设施以及 eval / safety 信号。")
+    lines.append("")
+    if top:
+        lines.append("## 今日最重要 3 条")
+        lines.append("")
+        for event in top:
+            reason = event.metadata.get("reason") if isinstance(event.metadata, dict) else ""
+            lines.append(f"- **{event.title}**：{reason or '高优先级事件'}")
+        lines.append("")
+    return lines
 
 
 def _count_topics(events: list[IntelligenceEvent]) -> list[tuple[str, int]]:
