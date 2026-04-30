@@ -10,39 +10,52 @@ except ImportError:
 
 TOPIC_RULES: dict[str, list[str]] = {
     "model_release": [
-        "model", "release", "launch", "version", "gemini", "gpt", "claude", "llama", "granite",
+        " model ", " release ", " launch ", " version ", "gemini", "gpt", "claude", "llama", "granite", "tpu", "gpu",
     ],
     "agent": [
-        "agent", "agents", "agentic", "workflow", "browser use", "tool use", "automation",
+        " agent ", " agents ", " agentic ", " orchestration ", "tool use", "automation",
     ],
     "mcp": [
         "mcp", "model context protocol",
     ],
     "infra_compute": [
-        "gpu", "tpu", "compute", "datacenter", "data center", "inference", "training", "chip", "chips",
+        "gpu", "tpu", "compute", "datacenter", "data center", "inference", "training", "chip", "chips", "cloud",
     ],
     "eval_safety": [
         "eval", "evaluation", "safety", "alignment", "cybersecurity", "security", "benchmark",
     ],
     "open_source_model": [
-        "open source", "hugging face", "weights", "checkpoint", "granite", "mistral",
+        "open source", "hugging face", "weights", "checkpoint", "granite", "mistral", "sentence transformers",
     ],
     "enterprise_adoption": [
-        "enterprise", "business", "workspace", "customer", "cloud", "deployment", "productivity",
+        "enterprise", "business", "workspace", "customer", "deployment", "productivity", "aws",
     ],
     "funding_policy": [
         "funding", "investment", "capital", "policy", "regulation", "government", "acquisition", "ipo",
     ],
 }
 
+NOISE_PATTERNS = [
+    "fun facts",
+    "travel smarter",
+    "organizing your space",
+    "summer",
+]
+
 
 def classify_event(event: IntelligenceEvent) -> IntelligenceEvent:
-    haystack = f"{event.title} {event.summary}".lower()
+    haystack = f" {event.title} {event.summary} ".lower()
     topics = set(event.topics)
 
     for topic, keywords in TOPIC_RULES.items():
         if any(k in haystack for k in keywords):
             topics.add(topic)
+
+    # tame over-tagging for clearly lightweight consumer content
+    if any(pattern in haystack for pattern in NOISE_PATTERNS):
+        topics.discard("infra_compute")
+        topics.discard("agent")
+        topics.discard("model_release")
 
     if not topics:
         topics.add("general_ai")
